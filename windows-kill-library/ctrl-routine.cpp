@@ -130,40 +130,9 @@ namespace WindowsKillLibrary {
 
 	// TODO: a rewrite needed.
 	void CtrlRoutine::findAddressByStackBackTrace() {
-		LPVOID ctrlRoutine;
-		
-		USHORT count = CaptureStackBackTrace((ULONG)2, (ULONG)1, &ctrlRoutine, NULL);
-		if (count != 1) {
-			return;
-			/*	TODO: Remove. No Exception Available here.
-				throw runtime_error(string("Cannot capture stack back trace."));
-			*/
+		HMODULE hModule = GetModuleHandleA("kernel32.dll");
+		if (hModule != NULL) {
+			this->address = (LPTHREAD_START_ROUTINE)GetProcAddress(hModule, "CtrlRoutine");
 		}
-
-		HANDLE hProcess = GetCurrentProcess();
-		if (!SymInitialize(hProcess, NULL, TRUE)) {
-			return;
-			/*	TODO: Remove. No Exception Available here.
-				throw runtime_error(string("Cannot SymInitialize. Code: ") + std::to_string(GetLastError()));
-			*/
-		}
-
-		ULONG64 buffer[(sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR) + sizeof(ULONG64) - 1) / sizeof(ULONG64)];
-		PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)buffer;
-		pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-		pSymbol->MaxNameLen = MAX_SYM_NAME;
-
-		LPVOID funcCtrlRoutine = NULL;
-		DWORD64 dwDisplacement = 0;
-		if (!SymFromAddr(hProcess, (DWORD64)ctrlRoutine, &dwDisplacement, pSymbol)) {
-			return;
-			/*	TODO: Remove. No Exception Available here.
-				throw runtime_error(string("Cannot SymFromAddr. Code: ") + std::to_string(GetLastError()));
-			*/
-		}
-		funcCtrlRoutine = reinterpret_cast<LPVOID>(pSymbol->Address);
-
-		SymCleanup(hProcess);
-		this->address = (LPTHREAD_START_ROUTINE)funcCtrlRoutine;
 	}
 }
